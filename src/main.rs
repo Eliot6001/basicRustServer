@@ -17,11 +17,18 @@ fn main() {
                 }
                 let mut path = std::path::PathBuf::new();
                 path.push(resource.trim_start_matches('/'));
-                if (resource.ends_with("/index.html")) {
-                    path.push(".");
+                if (resource.ends_with("/")) {
+                    path.push("index.html");
                 }
-                print!("{:?}", &path.display());
-                stream.write_all(&std::fs::read(path).unwrap()).unwrap();
+                print!("{:?}", &path);
+                let content = std::fs::read(&path)
+                    .unwrap_or_else(|_| b"HTTP/1.1 404 NOT FOUND\r\n\r\n".to_vec());
+                if content.starts_with(b"HTTP/1.1 404") {
+                    stream.write_all(&content).unwrap();
+                } else {
+                    stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
+                    stream.write_all(&content).unwrap();
+                }
             }
             _ => todo!(),
         }
